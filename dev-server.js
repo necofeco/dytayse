@@ -17,8 +17,9 @@ app.use("/api", (req, res, next) => {
   next();
 });
 
-// Static site (index.html, css/, js/, images, etc.)
-app.use(express.static(path.resolve(__dirname)));
+// Yerel geliştirme: Vercel’deki gibi sadece public/ klasörünü servis et
+const publicDir = path.join(__dirname, "public");
+app.use(express.static(publicDir));
 
 function requiredEnv(name) {
   const v = process.env[name];
@@ -27,7 +28,6 @@ function requiredEnv(name) {
 }
 
 function normalizePhone(input) {
-  // Keep digits only (works for both CallMeBot and WA Cloud API)
   return String(input).replace(/[^\d]/g, "");
 }
 
@@ -93,6 +93,5 @@ app.get("/healthz", (req, res) => res.json({ ok: true }));
 
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on http://localhost:${port} (serving ${publicDir})`);
 });
-
