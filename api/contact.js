@@ -1,34 +1,5 @@
-const path = require("path");
-const express = require("express");
-
-require("dotenv").config();
-
-const app = express();
-
-app.disable("x-powered-by");
-app.use(express.json({ limit: "50kb" }));
-
-// Dev-friendly CORS for API requests (useful if the HTML is served from another port).
-app.use("/api", (req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
-
-// Static site (index.html, css/, js/, images, etc.)
-app.use(express.static(path.resolve(__dirname)));
-
-function requiredEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing required env var: ${name}`);
-  return v;
-}
-
 function normalizePhone(input) {
-  // Keep digits only (works for both CallMeBot and WA Cloud API)
-  return String(input).replace(/[^\d]/g, "");
+  return String(input || "").replace(/[^\d]/g, "");
 }
 
 function buildWhatsAppMessage({ ad, soyad, email, mesaj, pageUrl }) {
@@ -49,7 +20,23 @@ function buildWhatsAppMessage({ ad, soyad, email, mesaj, pageUrl }) {
   return parts.join("\n");
 }
 
-app.post("/api/contact", async (req, res) => {
+function requiredEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing required env var: ${name}`);
+  return v;
+}
+
+export default async function handler(req, res) {
+  // CORS (optional but helpful)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  if (req.method === "OPTIONS") return res.status(204).end();
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "Method Not Allowed" });
+  }
+
   try {
     const { ad, soyad, email, mesaj, pageUrl } = req.body || {};
 
@@ -61,9 +48,9 @@ app.post("/api/contact", async (req, res) => {
       return res.status(400).json({ ok: false, error: "Mesaj çok uzun." });
     }
 
-    const bodyText = buildWhatsAppMessage({ ad, soyad, email, mesaj, pageUrl });
     const phone = normalizePhone(requiredEnv("CALLMEBOT_PHONE"));
     const apiKey = requiredEnv("CALLMEBOT_APIKEY");
+    const bodyText = buildWhatsAppMessage({ ad, soyad, email, mesaj, pageUrl });
 
     const url =
       "https://api.callmebot.com/whatsapp.php" +
@@ -87,12 +74,5 @@ app.post("/api/contact", async (req, res) => {
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message || "Sunucu hatası." });
   }
-});
-
-app.get("/healthz", (req, res) => res.json({ ok: true }));
-
-const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+}
 

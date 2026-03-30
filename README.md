@@ -25,6 +25,17 @@ npm run dev
 
 Site: `http://localhost:3000`
 
+## Vercel'e deploy
+
+Bu proje Vercel’de statik site + `api/contact` serverless function olarak çalışır.
+
+Vercel projenizde **Environment Variables** olarak şunları girin:
+
+- `CALLMEBOT_PHONE` (ör. `905421812326`, `+` olmadan)
+- `CALLMEBOT_APIKEY` (ör. `6928703`)
+
+Deploy sonrası form otomatik olarak `POST /api/contact` çağırır.
+
 ## Form akışı
 
 `index.html` içindeki form, `POST /api/contact` endpoint’ine JSON gönderir. Sunucu da CallMeBot WhatsApp API ile belirtilen numaraya metin mesajı yollar.
